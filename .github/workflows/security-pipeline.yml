@@ -1,0 +1,66 @@
+name: DevSecOps Security Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  devsecops-security-checks:
+    name: DevSecOps Security Checks
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_VERSION: 20
+      IMAGE_NAME: lunarops-control:ci
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run automated tests
+        run: npm test
+
+      - name: Run dependency vulnerability audit
+        run: npm audit --audit-level=high
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE_NAME .
+
+      - name: Run container smoke test
+        run: |
+          docker run -d --name lunarops-ci -p 3001:3000 -e API_KEY="${{ secrets.API_KEY }}" $IMAGE_NAME
+          sleep 5
+          curl --fail http://localhost:3001/health
+          curl --fail -H "x-api-key: ${{ secrets.API_KEY }}" http://localhost:3001/mission/status
+
+      - name: Stop test container
+        if: always()
+        run: |
+          docker logs lunarops-ci || true
+          docker stop lunarops-ci || true
+
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL

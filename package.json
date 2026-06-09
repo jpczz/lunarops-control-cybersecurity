@@ -1,0 +1,34 @@
+{
+  "name": "lunarops-control-cybersecurity",
+  "version": "1.0.0",
+  "description": "Plataforma DevSecOps para monitoramento seguro de operações logísticas em infraestrutura lunar.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest",
+    "security:audit": "npm audit --audit-level=high"
+  },
+  "keywords": [
+    "devsecops",
+    "cybersecurity",
+    "global-solution",
+    "space-connect",
+    "fiap",
+    "docker",
+    "security"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "express": "^4.0.0",
+    "helmet": "^7.0.0",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "nodemon": "^3.0.0",
+    "supertest": "^6.0.0"
+  }
+}
