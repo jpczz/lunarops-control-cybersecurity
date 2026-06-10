@@ -10,6 +10,15 @@ on:
       - main
       - master
   workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: "Simulate an invalid API key failure in smoke test"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
   devsecops-security-checks:
@@ -47,7 +56,14 @@ jobs:
           docker run -d --name lunarops-ci -p 3001:3000 -e API_KEY="${{ secrets.API_KEY }}" $IMAGE_NAME
           sleep 5
           curl --fail http://localhost:3001/health
-          curl --fail -H "x-api-key: ${{ secrets.API_KEY }}" http://localhost:3001/mission/status
+
+          if [ "${{ github.event.inputs.simulate_failure }}" = "true" ]; then
+            echo "Simulating failure: using an invalid API key in protected route smoke test."
+            curl --fail -H "x-api-key: invalid-key-for-simulation" http://localhost:3001/mission/status
+          else
+            echo "Running normal smoke test with GitHub Secret API_KEY."
+            curl --fail -H "x-api-key: ${{ secrets.API_KEY }}" http://localhost:3001/mission/status
+          fi
 
       - name: Stop test container
         if: always()
